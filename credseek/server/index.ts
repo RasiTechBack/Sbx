@@ -1963,12 +1963,20 @@ app.post(
 
 app.get('/api/import/jobs', authMiddleware, requireDataManager, async (req: AuthRequest, res) => {
   const statusRaw = String(req.query.status || '').trim()
+  const includeFinished =
+    String(req.query.includeFinished || req.query.all || '').trim() === '1' ||
+    String(req.query.includeFinished || req.query.all || '')
+      .trim()
+      .toLowerCase() === 'true'
+  // Default: only active jobs so finished processes leave the user UI ("Proses di server").
   const statuses = statusRaw
     ? (statusRaw
         .split(',')
         .map((s) => s.trim())
         .filter(Boolean) as Array<'queued' | 'running' | 'done' | 'error' | 'cancelled'>)
-    : undefined
+    : includeFinished
+      ? undefined
+      : (['queued', 'running'] as Array<'queued' | 'running'>)
   const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 40))
   const mineOnly = req.user!.role !== 'admin'
   const jobs = await listImportJobs({
