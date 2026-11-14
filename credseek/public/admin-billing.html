@@ -34,14 +34,38 @@
       .actions { display: flex; flex-wrap: wrap; gap: .35rem; }
       .actions button { width: auto; padding: .35rem .55rem; font-size: .78rem; }
       a { color: var(--accent2); }
+      .appbar {
+        display:flex; flex-wrap:wrap; gap:.55rem; align-items:center; justify-content:space-between;
+        margin:0 0 1.1rem; padding:.75rem .9rem; border:1px solid var(--line); border-radius:14px;
+        background:rgba(10,20,30,.85);
+      }
+      .appbar__brand { font-family:Oxanium,Outfit,sans-serif; font-weight:700; letter-spacing:.04em; }
+      .appbar__nav { display:flex; flex-wrap:wrap; gap:.45rem; }
+      .appbar__nav a {
+        color:var(--text); text-decoration:none; font-size:.85rem; padding:.35rem .6rem; border-radius:8px;
+        border:1px solid transparent;
+      }
+      .appbar__nav a:hover, .appbar__nav a.is-active {
+        border-color:rgba(45,212,191,.35); background:rgba(45,212,191,.08); color:var(--accent);
+      }
     </style>
   </head>
   <body>
     <div class="wrap">
+      <div class="appbar">
+        <div class="appbar__brand">CREDSEEK</div>
+        <nav class="appbar__nav" aria-label="App">
+          <a href="/dashboard">Overview</a>
+          <a href="/settings?tab=team">Accounts</a>
+          <a class="is-active" href="/admin/billing">Billing &amp; Trial</a>
+          <a href="/docs">API Docs</a>
+          <a href="/subscribe">Subscribe</a>
+        </nav>
+      </div>
       <h1>Billing & Trial</h1>
-      <p class="muted">Aktivasi manual, trial client, dan pantau status langganan. <a href="/subscribe">Subscribe</a> · <a href="/docs">API Docs</a> · <a href="/">App</a></p>
+      <p class="muted">Bagian admin CredSeek untuk trial client dan aktivasi langganan manual.</p>
 
-      <div class="card" id="loginCard" style="margin:1rem 0;">
+      <div class="card" id="loginCard" style="margin:1rem 0; display:none;">
         <strong>Admin login</strong>
         <input id="email" placeholder="Email admin" />
         <input id="password" type="password" placeholder="Password" />
@@ -194,16 +218,25 @@
       })
 
       ;(async () => {
-        if (!token) return
+        const showLogin = () => {
+          document.getElementById('loginCard').style.display = 'block'
+          document.getElementById('app').style.display = 'none'
+        }
+        if (!token) {
+          showLogin()
+          return
+        }
         try {
           const me = await api('/api/auth/me')
-          if (me.user.role !== 'admin') throw new Error('not admin')
+          const user = me.user || me
+          if (user.role !== 'admin') throw new Error('not admin')
           document.getElementById('loginCard').style.display = 'none'
           document.getElementById('app').style.display = 'grid'
           await loadUsers()
         } catch {
           token = ''
           localStorage.removeItem(key)
+          showLogin()
         }
       })()
     </script>

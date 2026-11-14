@@ -20,12 +20,36 @@
       .method { font-weight:700; color:var(--accent); }
       .path { color:#fde68a; }
       ul { color:var(--muted); }
+      .appbar {
+        display:flex; flex-wrap:wrap; gap:.55rem; align-items:center; justify-content:space-between;
+        margin:0 0 1.1rem; padding:.75rem .9rem; border:1px solid var(--line); border-radius:14px;
+        background:rgba(10,20,30,.85);
+      }
+      .appbar__brand { font-family:Oxanium,Outfit,sans-serif; font-weight:700; letter-spacing:.04em; }
+      .appbar__nav { display:flex; flex-wrap:wrap; gap:.45rem; }
+      .appbar__nav a {
+        color:var(--text); text-decoration:none; font-size:.85rem; padding:.35rem .6rem; border-radius:8px;
+        border:1px solid transparent;
+      }
+      .appbar__nav a:hover, .appbar__nav a.is-active {
+        border-color:rgba(45,212,191,.35); background:rgba(45,212,191,.08); color:var(--accent);
+      }
     </style>
   </head>
   <body>
     <div class="wrap">
+      <div class="appbar">
+        <div class="appbar__brand">CREDSEEK</div>
+        <nav class="appbar__nav" aria-label="App">
+          <a href="/dashboard">Overview</a>
+          <a href="/settings?tab=team">Accounts</a>
+          <a href="/admin/billing">Billing &amp; Trial</a>
+          <a class="is-active" href="/docs">API Docs</a>
+          <a href="/subscribe">Subscribe</a>
+        </nav>
+      </div>
       <h1>CredSeek API</h1>
-      <p class="muted">Autentikasi Bearer JWT. User biasa membutuhkan langganan aktif (`status: active|trial`) untuk memakai endpoint produk. Admin &amp; Dev bypass. Halaman bayar: <a href="/subscribe">/subscribe</a> · Billing admin: <a href="/admin/billing">/admin/billing</a></p>
+      <p class="muted">Dokumentasi API aplikasi yang sama. Autentikasi Bearer JWT. User biasa butuh langganan aktif (`status: active|trial`). Admin &amp; Dev bypass.</p>
 
       <div class="card">
         <h2>Auth</h2>
