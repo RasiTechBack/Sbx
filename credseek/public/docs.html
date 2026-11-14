@@ -7,125 +7,117 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@400;500;600;700&family=Oxanium:wght@600;700&display=swap" rel="stylesheet" />
     <style>
-      :root { --bg:#070f16; --panel:#0d1822; --line:rgba(125,211,252,.18); --text:#e7f0f6; --muted:#94a9b8; --accent:#2dd4bf; --code:#0a131c; }
+      :root {
+        --bg: #081018; --panel: rgba(15, 28, 40, 0.92); --line: rgba(148, 163, 184, 0.22);
+        --text: #e5eef5; --muted: #93a4b3; --accent: #2dd4bf; --code: rgba(0, 0, 0, 0.28);
+      }
       * { box-sizing: border-box; }
-      body { margin:0; font-family:Outfit,sans-serif; color:var(--text); background:radial-gradient(900px 400px at 0% 0%,rgba(45,212,191,.12),transparent), var(--bg); }
-      .wrap { width:min(980px, calc(100% - 2rem)); margin:0 auto; padding:2rem 0 4rem; }
-      h1,h2,h3 { font-family:Oxanium,Outfit,sans-serif; }
-      a { color:#7dd3fc; }
-      .muted { color:var(--muted); line-height:1.55; }
-      .card { background:rgba(13,24,34,.92); border:1px solid var(--line); border-radius:16px; padding:1rem 1.1rem; margin:1rem 0; }
-      code, pre { font-family:"IBM Plex Mono",monospace; }
-      pre { background:var(--code); border:1px solid var(--line); border-radius:12px; padding:0.9rem; overflow:auto; font-size:.82rem; }
-      .method { font-weight:700; color:var(--accent); }
-      .path { color:#fde68a; }
-      ul { color:var(--muted); }
-      .appbar {
-        display:flex; flex-wrap:wrap; gap:.55rem; align-items:center; justify-content:space-between;
-        margin:0 0 1.1rem; padding:.75rem .9rem; border:1px solid var(--line); border-radius:14px;
-        background:rgba(10,20,30,.85);
+      body {
+        margin: 0;
+        font-family: Outfit, sans-serif;
+        color: var(--text);
+        background: linear-gradient(160deg, #071019, #0c1824 50%, #0a141d);
+        min-height: 100vh;
       }
-      .appbar__brand { font-family:Oxanium,Outfit,sans-serif; font-weight:700; letter-spacing:.04em; }
-      .appbar__nav { display:flex; flex-wrap:wrap; gap:.45rem; }
-      .appbar__nav a {
-        color:var(--text); text-decoration:none; font-size:.85rem; padding:.35rem .6rem; border-radius:8px;
-        border:1px solid transparent;
+      .wrap { width: min(860px, calc(100% - 2rem)); margin: 0 auto; padding: 1.25rem 0 3rem; }
+      h1 { font-family: Oxanium, Outfit, sans-serif; margin: 0 0 0.35rem; font-size: 1.45rem; }
+      h2 { font-family: Oxanium, Outfit, sans-serif; margin: 0 0 0.55rem; font-size: 1.05rem; }
+      .muted { color: var(--muted); line-height: 1.55; margin: 0 0 0.45rem; }
+      .top {
+        display: flex; justify-content: space-between; align-items: center; gap: 0.75rem;
+        margin-bottom: 1rem; flex-wrap: wrap;
       }
-      .appbar__nav a:hover, .appbar__nav a.is-active {
-        border-color:rgba(45,212,191,.35); background:rgba(45,212,191,.08); color:var(--accent);
+      .top a { color: #7dd3fc; text-decoration: none; font-size: 0.9rem; }
+      .stack { display: grid; gap: 0.85rem; }
+      .card {
+        background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+        padding: 0.9rem 1rem;
       }
+      code, pre { font-family: "IBM Plex Mono", monospace; }
+      pre {
+        background: var(--code); border: 1px solid var(--line); border-radius: 10px;
+        padding: 0.75rem; overflow: auto; font-size: 0.8rem; margin: 0.35rem 0 0.55rem;
+        white-space: pre-wrap;
+      }
+      .method { font-weight: 700; color: var(--accent); }
+      .path { color: #fde68a; }
+      ul { color: var(--muted); margin: 0.25rem 0 0.55rem; padding-left: 1.1rem; }
     </style>
   </head>
   <body>
     <div class="wrap">
-      <div class="appbar">
-        <div class="appbar__brand">CREDSEEK</div>
-        <nav class="appbar__nav" aria-label="App">
-          <a href="/dashboard">Overview</a>
-          <a href="/settings?tab=team">Accounts</a>
-          <a href="/admin/billing">Billing &amp; Trial</a>
-          <a class="is-active" href="/docs">API Docs</a>
-          <a href="/subscribe">Subscribe</a>
-        </nav>
+      <div class="top">
+        <div>
+          <h1>CredSeek API</h1>
+          <p class="muted">Bearer JWT. User biasa butuh langganan aktif (`active`/`trial`). Admin &amp; Dev bypass.</p>
+        </div>
+        <a href="/settings?tab=docs">Buka di Settings</a>
       </div>
-      <h1>CredSeek API</h1>
-      <p class="muted">Admin: docs yang sama juga ada di aplikasi lewat <a href="/settings?tab=docs">Settings → API Docs</a>.</p>
-      <p class="muted">Dokumentasi API aplikasi yang sama. Autentikasi Bearer JWT. User biasa butuh langganan aktif (`status: active|trial`). Admin &amp; Dev bypass.</p>
 
-      <div class="card">
-        <h2>Auth</h2>
-        <p><span class="method">POST</span> <span class="path">/api/auth/login</span></p>
-        <pre>{
+      <div class="stack">
+        <section class="card">
+          <h2>Auth</h2>
+          <p><span class="method">POST</span> <span class="path">/api/auth/login</span></p>
+          <pre>{
   "email": "user@company.com",
   "password": "secret123",
   "rememberMe": true
 }</pre>
-        <p class="muted">Response berisi <code>token</code> dan <code>user.subscription</code>.</p>
-        <p><span class="method">GET</span> <span class="path">/api/auth/me</span> — header <code>Authorization: Bearer &lt;token&gt;</code></p>
-      </div>
+          <p class="muted">Response: <code>token</code> + <code>user.subscription</code>.</p>
+          <p><span class="method">GET</span> <span class="path">/api/auth/me</span> — <code>Authorization: Bearer &lt;token&gt;</code></p>
+        </section>
 
-      <div class="card">
-        <h2>Subscription</h2>
-        <p><span class="method">GET</span> <span class="path">/api/subscription/plans</span> — daftar paket (publik)</p>
-        <p><span class="method">GET</span> <span class="path">/api/subscription/me</span> — status langganan user</p>
-        <p><span class="method">POST</span> <span class="path">/api/subscription/checkout</span></p>
-        <pre>{ "planId": "starter" }</pre>
-        <p class="muted">Membuat payment QRIS via Saweria. Response: <code>payment.qrString</code>, <code>payment.id</code>, <code>payment.providerPaymentId</code>.</p>
-        <p><span class="method">GET</span> <span class="path">/api/subscription/payments/:id</span> — cek &amp; sync status pembayaran</p>
-        <p><span class="method">GET</span> <span class="path">/api/subscription/payments</span> — riwayat payment user</p>
-        <p class="muted">Jika belum berlangganan, endpoint produk mengembalikan <code>402</code> dengan <code>code: SUBSCRIPTION_REQUIRED</code>.</p>
-      </div>
+        <section class="card">
+          <h2>Subscription</h2>
+          <p><span class="method">GET</span> <span class="path">/api/subscription/plans</span> — daftar paket (publik)</p>
+          <p><span class="method">GET</span> <span class="path">/api/subscription/me</span> — status langganan</p>
+          <p><span class="method">POST</span> <span class="path">/api/subscription/checkout</span></p>
+          <pre>{ "planId": "starter" }</pre>
+          <p class="muted">Response: <code>payment.qrString</code>, <code>payment.id</code>, <code>payment.providerPaymentId</code>.</p>
+          <p><span class="method">GET</span> <span class="path">/api/subscription/payments/:id</span> — cek &amp; sync status</p>
+          <p><span class="method">GET</span> <span class="path">/api/subscription/payments</span> — riwayat payment</p>
+          <p class="muted">Tanpa paket aktif → <code>402</code> <code>SUBSCRIPTION_REQUIRED</code>.</p>
+        </section>
 
-      <div class="card">
-        <h2>Search (contoh produk)</h2>
-        <p><span class="method">GET</span> <span class="path">/api/search?q=example.com&amp;filter=domain&amp;page=1&amp;limit=50</span></p>
-        <ul>
-          <li>Guest: hasil terbatas &amp; tersensor</li>
-          <li>Member aktif: hasil penuh</li>
-          <li>Member tanpa paket: 402</li>
-        </ul>
-        <pre>curl -H "Authorization: Bearer $TOKEN" \
+        <section class="card">
+          <h2>Search</h2>
+          <p><span class="method">GET</span> <span class="path">/api/search?q=example.com&amp;filter=domain&amp;page=1&amp;limit=50</span></p>
+          <ul>
+            <li>Guest: hasil terbatas &amp; tersensor</li>
+            <li>Member aktif/trial: hasil penuh</li>
+            <li>Member tanpa paket: 402</li>
+          </ul>
+          <pre>curl -H "Authorization: Bearer $TOKEN" \
   "https://YOUR_HOST/api/search?q=gmail.com&amp;filter=domain&amp;limit=20"</pre>
-      </div>
+        </section>
 
-      <div class="card">
-        <h2>Admin billing</h2>
-        <p><span class="method">GET</span> <span class="path">/api/admin/users-billing</span></p>
-        <p><span class="method">POST</span> <span class="path">/api/admin/trial-users</span></p>
-        <pre>{
+        <section class="card">
+          <h2>Admin (trial &amp; aktivasi)</h2>
+          <p class="muted">UI: Settings → Accounts (Trial days / Set trial).</p>
+          <p><span class="method">POST</span> <span class="path">/api/users</span> — body boleh <code>trialDays</code> (role user)</p>
+          <p><span class="method">POST</span> <span class="path">/api/admin/trial-users</span></p>
+          <pre>{
   "name": "Client Trial",
   "email": "client@example.com",
   "password": "temporary",
   "planId": "starter",
-  "days": 7,
-  "note": "POC minggu ini"
+  "days": 7
 }</pre>
-        <p><span class="method">POST</span> <span class="path">/api/admin/users/:id/subscription</span></p>
-        <pre>{
-  "action": "activate",   // activate | trial | expire | clear
-  "planId": "pro",
-  "days": 30,
-  "note": "Bayar transfer manual"
+          <p><span class="method">POST</span> <span class="path">/api/admin/users/:id/subscription</span></p>
+          <pre>{
+  "action": "trial",
+  "planId": "starter",
+  "days": 7
 }</pre>
-        <p><span class="method">GET</span> <span class="path">/api/admin/subscriptions</span></p>
-      </div>
+        </section>
 
-      <div class="card">
-        <h2>Payment provider (internal)</h2>
-        <p class="muted">CredSeek memanggil:</p>
-        <ul>
-          <li>Create: <code>GET https://rasitech.org/saweria/?nominal=25000</code></li>
-          <li>Check: <code>GET https://rasitech.org/saweria/cek.php?id=&lt;paymentId&gt;</code> — status <code>PENDING</code> / <code>sukses</code></li>
-        </ul>
-        <p class="muted">Override via env <code>SAWERIA_CREATE_URL</code> dan <code>SAWERIA_CHECK_URL</code>. Paket custom: <code>SUBSCRIPTION_PACKAGES_JSON</code>.</p>
-      </div>
-
-      <div class="card">
-        <h2>Error codes</h2>
-        <pre>401 Unauthorized
+        <section class="card">
+          <h2>Error codes</h2>
+          <pre>401 Unauthorized
 402 SUBSCRIPTION_REQUIRED
 403 Forbidden (role)
 502 Payment provider error</pre>
+        </section>
       </div>
     </div>
   </body>
