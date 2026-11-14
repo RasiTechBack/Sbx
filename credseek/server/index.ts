@@ -2076,7 +2076,8 @@ app.get(['/admin/billing', '/admin-billing', '/admin-billing.html'], (_req, res)
   res.setHeader('Cache-Control', 'no-store')
   res.sendFile(path.join(publicHtml, 'admin-billing.html'))
 })
-app.get(['/docs', '/api-docs', '/docs.html'], (_req, res) => {
+// Public client docs stay at /docs. In-app API Docs uses SPA route /api-docs.
+app.get(['/docs', '/docs.html'], (_req, res) => {
   res.setHeader('Cache-Control', 'no-store')
   res.sendFile(path.join(publicHtml, 'docs.html'))
 })
@@ -2097,8 +2098,7 @@ if (fs.existsSync(distDir)) {
       p === '/admin-billing' ||
       p === '/admin-billing.html' ||
       p === '/docs' ||
-      p === '/docs.html' ||
-      p === '/api-docs'
+      p === '/docs.html'
     ) {
       return next()
     }
