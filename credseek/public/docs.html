@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CredSeek API Docs</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@400;500;600;700&family=Oxanium:wght@600;700&display=swap" rel="stylesheet" />
+    <style>
+      :root { --bg:#070f16; --panel:#0d1822; --line:rgba(125,211,252,.18); --text:#e7f0f6; --muted:#94a9b8; --accent:#2dd4bf; --code:#0a131c; }
+      * { box-sizing: border-box; }
+      body { margin:0; font-family:Outfit,sans-serif; color:var(--text); background:radial-gradient(900px 400px at 0% 0%,rgba(45,212,191,.12),transparent), var(--bg); }
+      .wrap { width:min(980px, calc(100% - 2rem)); margin:0 auto; padding:2rem 0 4rem; }
+      h1,h2,h3 { font-family:Oxanium,Outfit,sans-serif; }
+      a { color:#7dd3fc; }
+      .muted { color:var(--muted); line-height:1.55; }
+      .card { background:rgba(13,24,34,.92); border:1px solid var(--line); border-radius:16px; padding:1rem 1.1rem; margin:1rem 0; }
+      code, pre { font-family:"IBM Plex Mono",monospace; }
+      pre { background:var(--code); border:1px solid var(--line); border-radius:12px; padding:0.9rem; overflow:auto; font-size:.82rem; }
+      .method { font-weight:700; color:var(--accent); }
+      .path { color:#fde68a; }
+      ul { color:var(--muted); }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>CredSeek API</h1>
+      <p class="muted">Autentikasi Bearer JWT. User biasa membutuhkan langganan aktif (`status: active|trial`) untuk memakai endpoint produk. Admin &amp; Dev bypass. Halaman bayar: <a href="/subscribe">/subscribe</a> · Billing admin: <a href="/admin/billing">/admin/billing</a></p>
+
+      <div class="card">
+        <h2>Auth</h2>
+        <p><span class="method">POST</span> <span class="path">/api/auth/login</span></p>
+        <pre>{
+  "email": "user@company.com",
+  "password": "secret123",
+  "rememberMe": true
+}</pre>
+        <p class="muted">Response berisi <code>token</code> dan <code>user.subscription</code>.</p>
+        <p><span class="method">GET</span> <span class="path">/api/auth/me</span> — header <code>Authorization: Bearer &lt;token&gt;</code></p>
+      </div>
+
+      <div class="card">
+        <h2>Subscription</h2>
+        <p><span class="method">GET</span> <span class="path">/api/subscription/plans</span> — daftar paket (publik)</p>
+        <p><span class="method">GET</span> <span class="path">/api/subscription/me</span> — status langganan user</p>
+        <p><span class="method">POST</span> <span class="path">/api/subscription/checkout</span></p>
+        <pre>{ "planId": "starter" }</pre>
+        <p class="muted">Membuat payment QRIS via Saweria. Response: <code>payment.qrString</code>, <code>payment.id</code>, <code>payment.providerPaymentId</code>.</p>
+        <p><span class="method">GET</span> <span class="path">/api/subscription/payments/:id</span> — cek &amp; sync status pembayaran</p>
+        <p><span class="method">GET</span> <span class="path">/api/subscription/payments</span> — riwayat payment user</p>
+        <p class="muted">Jika belum berlangganan, endpoint produk mengembalikan <code>402</code> dengan <code>code: SUBSCRIPTION_REQUIRED</code>.</p>
+      </div>
+
+      <div class="card">
+        <h2>Search (contoh produk)</h2>
+        <p><span class="method">GET</span> <span class="path">/api/search?q=example.com&amp;filter=domain&amp;page=1&amp;limit=50</span></p>
+        <ul>
+          <li>Guest: hasil terbatas &amp; tersensor</li>
+          <li>Member aktif: hasil penuh</li>
+          <li>Member tanpa paket: 402</li>
+        </ul>
+        <pre>curl -H "Authorization: Bearer $TOKEN" \
+  "https://YOUR_HOST/api/search?q=gmail.com&amp;filter=domain&amp;limit=20"</pre>
+      </div>
+
+      <div class="card">
+        <h2>Admin billing</h2>
+        <p><span class="method">GET</span> <span class="path">/api/admin/users-billing</span></p>
+        <p><span class="method">POST</span> <span class="path">/api/admin/trial-users</span></p>
+        <pre>{
+  "name": "Client Trial",
+  "email": "client@example.com",
+  "password": "temporary",
+  "planId": "starter",
+  "days": 7,
+  "note": "POC minggu ini"
+}</pre>
+        <p><span class="method">POST</span> <span class="path">/api/admin/users/:id/subscription</span></p>
+        <pre>{
+  "action": "activate",   // activate | trial | expire | clear
+  "planId": "pro",
+  "days": 30,
+  "note": "Bayar transfer manual"
+}</pre>
+        <p><span class="method">GET</span> <span class="path">/api/admin/subscriptions</span></p>
+      </div>
+
+      <div class="card">
+        <h2>Payment provider (internal)</h2>
+        <p class="muted">CredSeek memanggil:</p>
+        <ul>
+          <li>Create: <code>GET https://rasitech.org/saweria/?nominal=25000</code></li>
+          <li>Check: <code>GET https://rasitech.org/saweria/cek.php?id=&lt;paymentId&gt;</code> — status <code>PENDING</code> / <code>sukses</code></li>
+        </ul>
+        <p class="muted">Override via env <code>SAWERIA_CREATE_URL</code> dan <code>SAWERIA_CHECK_URL</code>. Paket custom: <code>SUBSCRIPTION_PACKAGES_JSON</code>.</p>
+      </div>
+
+      <div class="card">
+        <h2>Error codes</h2>
+        <pre>401 Unauthorized
+402 SUBSCRIPTION_REQUIRED
+403 Forbidden (role)
+502 Payment provider error</pre>
+      </div>
+    </div>
+  </body>
+</html>
