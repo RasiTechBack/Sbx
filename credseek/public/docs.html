@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CredSeek API Docs</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@400;500;600;700&family=Oxanium:wght@600;700&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --bg: #081018; --panel: rgba(15, 28, 40, 0.92); --line: rgba(148, 163, 184, 0.22);
+        --text: #e5eef5; --muted: #93a4b3; --accent: #2dd4bf; --code: rgba(0, 0, 0, 0.28);
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: Outfit, sans-serif;
+        color: var(--text);
+        background: linear-gradient(160deg, #071019, #0c1824 50%, #0a141d);
+        min-height: 100vh;
+      }
+      .wrap { width: min(860px, calc(100% - 2rem)); margin: 0 auto; padding: 1.25rem 0 3rem; }
+      h1 { font-family: Oxanium, Outfit, sans-serif; margin: 0 0 0.35rem; font-size: 1.45rem; }
+      h2 { font-family: Oxanium, Outfit, sans-serif; margin: 0 0 0.55rem; font-size: 1.05rem; }
+      .muted { color: var(--muted); line-height: 1.55; margin: 0 0 0.45rem; }
+      .top {
+        display: flex; justify-content: space-between; align-items: center; gap: 0.75rem;
+        margin-bottom: 1rem; flex-wrap: wrap;
+      }
+      .top a { color: #7dd3fc; text-decoration: none; font-size: 0.9rem; }
+      .stack { display: grid; gap: 0.85rem; }
+      .card {
+        background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+        padding: 0.9rem 1rem;
+      }
+      code, pre { font-family: "IBM Plex Mono", monospace; }
+      pre {
+        background: var(--code); border: 1px solid var(--line); border-radius: 10px;
+        padding: 0.75rem; overflow: auto; font-size: 0.8rem; margin: 0.35rem 0 0.55rem;
+        white-space: pre-wrap;
+      }
+      .method { font-weight: 700; color: var(--accent); }
+      .path { color: #fde68a; }
+      ul { color: var(--muted); margin: 0.25rem 0 0.55rem; padding-left: 1.1rem; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="top">
+        <div>
+          <h1>CredSeek API</h1>
+          <p class="muted">Bearer JWT. User biasa butuh langganan aktif (`active`/`trial`). Admin &amp; Dev bypass.</p>
+        </div>
+        <a href="/api-docs">Buka di app</a>
+      </div>
+
+      <div class="stack">
+        <section class="card">
+          <h2>Auth</h2>
+          <p><span class="method">POST</span> <span class="path">/api/auth/login</span></p>
+          <pre>{
+  "email": "user@company.com",
+  "password": "secret123",
+  "rememberMe": true
+}</pre>
+          <p class="muted">Response: <code>token</code> + <code>user.subscription</code>.</p>
+          <p><span class="method">GET</span> <span class="path">/api/auth/me</span> — <code>Authorization: Bearer &lt;token&gt;</code></p>
+        </section>
+
+        <section class="card">
+          <h2>Subscription</h2>
+          <p><span class="method">GET</span> <span class="path">/api/subscription/plans</span> — daftar paket (publik)</p>
+          <p><span class="method">GET</span> <span class="path">/api/subscription/me</span> — status langganan</p>
+          <p><span class="method">POST</span> <span class="path">/api/subscription/checkout</span></p>
+          <pre>{ "planId": "starter" }</pre>
+          <p class="muted">Response: <code>payment.qrString</code>, <code>payment.id</code>, <code>payment.providerPaymentId</code>.</p>
+          <p><span class="method">GET</span> <span class="path">/api/subscription/payments/:id</span> — cek &amp; sync status</p>
+          <p><span class="method">GET</span> <span class="path">/api/subscription/payments</span> — riwayat payment</p>
+          <p class="muted">Tanpa paket aktif → <code>402</code> <code>SUBSCRIPTION_REQUIRED</code>.</p>
+        </section>
+
+        <section class="card">
+          <h2>Search</h2>
+          <p><span class="method">GET</span> <span class="path">/api/search?q=example.com&amp;filter=domain&amp;page=1&amp;limit=50</span></p>
+          <ul>
+            <li>Guest: hasil terbatas &amp; tersensor</li>
+            <li>Member aktif/trial: hasil penuh</li>
+            <li>Member tanpa paket: 402</li>
+          </ul>
+          <pre>curl -H "Authorization: Bearer $TOKEN" \
+  "https://YOUR_HOST/api/search?q=gmail.com&amp;filter=domain&amp;limit=20"</pre>
+        </section>
+
+        <section class="card">
+          <h2>Admin (trial &amp; aktivasi)</h2>
+          <p class="muted">UI: Settings → Accounts (Trial days / Set trial).</p>
+          <p><span class="method">POST</span> <span class="path">/api/users</span> — body boleh <code>trialDays</code> (role user)</p>
+          <p><span class="method">POST</span> <span class="path">/api/admin/trial-users</span></p>
+          <pre>{
+  "name": "Client Trial",
+  "email": "client@example.com",
+  "password": "temporary",
+  "planId": "starter",
+  "days": 7
+}</pre>
+          <p><span class="method">POST</span> <span class="path">/api/admin/users/:id/subscription</span></p>
+          <pre>{
+  "action": "trial",
+  "planId": "starter",
+  "days": 7
+}</pre>
+        </section>
+
+        <section class="card">
+          <h2>Error codes</h2>
+          <pre>401 Unauthorized
+402 SUBSCRIPTION_REQUIRED
+403 Forbidden (role)
+502 Payment provider error</pre>
+        </section>
+      </div>
+    </div>
+  </body>
+</html>

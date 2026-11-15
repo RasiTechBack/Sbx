@@ -1,0 +1,8 @@
+credseek-pull/
+credseek/node_modules/
+credseek/server/data/
+credseek/dist/
+credseek/.env
+**/__pycache__/
+*.pyc
+.DS_Store

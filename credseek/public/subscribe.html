@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CredSeek · Langganan</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@400;500;600;700&family=Oxanium:wght@600;700&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --bg0: #07111a;
+        --bg1: #0c1b27;
+        --card: rgba(14, 32, 46, 0.72);
+        --line: rgba(125, 211, 252, 0.18);
+        --text: #e8f3f8;
+        --muted: #9bb4c3;
+        --accent: #2dd4bf;
+        --accent-2: #38bdf8;
+        --warn: #fbbf24;
+        --danger: #fb7185;
+        --ok: #34d399;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: Outfit, system-ui, sans-serif;
+        color: var(--text);
+        background:
+          radial-gradient(1200px 600px at 10% -10%, rgba(45, 212, 191, 0.18), transparent 55%),
+          radial-gradient(900px 500px at 100% 0%, rgba(56, 189, 248, 0.16), transparent 50%),
+          linear-gradient(165deg, var(--bg0), var(--bg1) 55%, #08131c);
+      }
+      .wrap { width: min(1100px, calc(100% - 2rem)); margin: 0 auto; padding: 2rem 0 4rem; }
+      header { display: flex; justify-content: space-between; align-items: end; gap: 1rem; margin-bottom: 1.75rem; }
+      .brand { font-family: Oxanium, Outfit, sans-serif; font-size: 1.65rem; letter-spacing: 0.02em; }
+      .brand span { color: var(--accent); }
+      .sub { color: var(--muted); max-width: 42rem; line-height: 1.5; }
+      .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+      @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } header { flex-direction: column; align-items: start; } }
+      .plan {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 1.25rem;
+        backdrop-filter: blur(10px);
+        position: relative;
+        overflow: hidden;
+      }
+      .plan.highlight { border-color: rgba(45, 212, 191, 0.55); box-shadow: 0 0 0 1px rgba(45, 212, 191, 0.15) inset; }
+      .plan h3 { margin: 0 0 0.35rem; font-family: Oxanium, Outfit, sans-serif; }
+      .price { font-size: 1.8rem; font-weight: 700; margin: 0.6rem 0; }
+      .price small { font-size: 0.85rem; color: var(--muted); font-weight: 500; }
+      ul { margin: 0.75rem 0 1.1rem; padding-left: 1.1rem; color: var(--muted); }
+      li { margin: 0.35rem 0; }
+      button, .btn {
+        appearance: none; border: 0; cursor: pointer;
+        background: linear-gradient(120deg, var(--accent), var(--accent-2));
+        color: #04201c; font-weight: 700; border-radius: 999px;
+        padding: 0.7rem 1rem; width: 100%; font-family: inherit;
+      }
+      button:disabled { opacity: 0.55; cursor: not-allowed; }
+      .panel {
+        margin-top: 1.5rem; border: 1px solid var(--line); border-radius: 18px;
+        background: rgba(6, 18, 28, 0.75); padding: 1.25rem; display: none;
+      }
+      .panel.show { display: block; }
+      .qrbox {
+        margin-top: 1rem; display: grid; grid-template-columns: 220px 1fr; gap: 1rem; align-items: center;
+      }
+      @media (max-width: 700px) { .qrbox { grid-template-columns: 1fr; } }
+      #qrCanvas { width: 220px; height: 220px; background: #fff; border-radius: 12px; padding: 10px; }
+      .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.85rem; color: var(--muted); word-break: break-all; }
+      .status { margin-top: 0.75rem; font-weight: 600; }
+      .status.ok { color: var(--ok); }
+      .status.wait { color: var(--warn); }
+      .status.bad { color: var(--danger); }
+      .top-links a { color: var(--accent-2); text-decoration: none; margin-left: 0.8rem; }
+      .badge {
+        position: absolute; top: 12px; right: 12px; font-size: 0.72rem; font-weight: 700;
+        background: rgba(45, 212, 191, 0.15); color: var(--accent); border: 1px solid rgba(45, 212, 191, 0.35);
+        padding: 0.2rem 0.55rem; border-radius: 999px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <div>
+          <div class="brand">Cred<span>Seek</span> Langganan</div>
+          <p class="sub">Akun terdaftar belum otomatis aktif. Pilih paket, scan QRIS, dan akses penuh terbuka setelah pembayaran sukses.</p>
+        </div>
+        <div class="top-links">
+          <a href="/dashboard">Overview</a>
+          <a href="/accounts">Accounts</a>
+          <a href="/admin/billing">Billing</a>
+          <a href="/docs">API Docs</a>
+          <a href="/search">Search</a>
+        </div>
+      </header>
+
+      <div id="authBox" class="panel show">
+        <strong>Login dulu</strong>
+        <p class="sub">Token dari aplikasi dipakai otomatis. Jika belum login, masukkan email/password.</p>
+        <div style="display:grid; gap:0.6rem; max-width:420px; margin-top:0.8rem;">
+          <input id="email" placeholder="Email" style="padding:0.7rem 0.8rem;border-radius:10px;border:1px solid var(--line);background:#06131d;color:var(--text);" />
+          <input id="password" type="password" placeholder="Password" style="padding:0.7rem 0.8rem;border-radius:10px;border:1px solid var(--line);background:#06131d;color:var(--text);" />
+          <button id="loginBtn" type="button">Masuk</button>
+        </div>
+        <p id="authMsg" class="status bad"></p>
+      </div>
+
+      <div id="meBox" class="panel">
+        <div id="meText" class="sub"></div>
+      </div>
+
+      <div id="plans" class="grid"></div>
+
+      <div id="payPanel" class="panel">
+        <h3 style="margin-top:0;font-family:Oxanium,Outfit,sans-serif;">Bayar dengan QRIS</h3>
+        <div class="qrbox">
+          <canvas id="qrCanvas" width="200" height="200"></canvas>
+          <div>
+            <div id="payMeta" class="mono"></div>
+            <div id="payStatus" class="status wait">Menunggu pembayaran…</div>
+            <p class="sub" style="margin-top:0.8rem;">Biarkan halaman ini terbuka. Status dicek otomatis tiap beberapa detik.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script>
+      const tokenKey = 'credseek_token'
+      let token = localStorage.getItem(tokenKey) || localStorage.getItem('token') || ''
+      let pollTimer = null
+
+      function authHeaders() {
+        return token ? { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' }
+      }
+
+      async function api(path, opts = {}) {
+        const res = await fetch(path, { ...opts, headers: { ...authHeaders(), ...(opts.headers || {}) } })
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status))
+        return data
+      }
+
+      function idr(n) {
+        return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n)
+      }
+
+      async function refreshMe() {
+        if (!token) {
+          document.getElementById('authBox').classList.add('show')
+          document.getElementById('meBox').classList.remove('show')
+          return null
+        }
+        try {
+          const data = await api('/api/subscription/me')
+          document.getElementById('authBox').classList.remove('show')
+          document.getElementById('meBox').classList.add('show')
+          const s = data.subscription
+          document.getElementById('meText').textContent =
+            data.user.email + ' · status: ' + s.status + (s.expiresAt ? ' · berlaku sampai ' + new Date(s.expiresAt).toLocaleString('id-ID') : '') +
+            (s.active ? ' · AKTIF' : ' · belum aktif')
+          return data
+        } catch (e) {
+          token = ''
+          localStorage.removeItem(tokenKey)
+          document.getElementById('authMsg').textContent = e.message
+          document.getElementById('authBox').classList.add('show')
+          return null
+        }
+      }
+
+      function renderPlans(plans) {
+        const root = document.getElementById('plans')
+        root.innerHTML = plans.map((p) => `
+          <article class="plan ${p.highlight ? 'highlight' : ''}">
+            ${p.highlight ? '<div class="badge">Populer</div>' : ''}
+            <h3>${p.name}</h3>
+            <div class="sub">${p.description || ''}</div>
+            <div class="price">${idr(p.priceIdr)} <small>/ ${p.durationDays} hari</small></div>
+            <ul>${(p.features || []).map((f) => `<li>${f}</li>`).join('')}</ul>
+            <button data-plan="${p.id}" type="button">Bayar QRIS</button>
+          </article>
+        `).join('')
+        root.querySelectorAll('button[data-plan]').forEach((btn) => {
+          btn.addEventListener('click', () => checkout(btn.getAttribute('data-plan'), btn))
+        })
+      }
+
+      async function checkout(planId, btn) {
+        if (!token) {
+          document.getElementById('authMsg').textContent = 'Login dulu sebelum checkout'
+          return
+        }
+        btn.disabled = true
+        try {
+          const data = await api('/api/subscription/checkout', {
+            method: 'POST',
+            body: JSON.stringify({ planId }),
+          })
+          const pay = data.payment
+          document.getElementById('payPanel').classList.add('show')
+          document.getElementById('payMeta').textContent =
+            `Plan ${pay.planName} · nominal ${idr(pay.nominal)} · ditagih ${idr(pay.amountCharged)} · id ${pay.providerPaymentId}`
+          await QRCode.toCanvas(document.getElementById('qrCanvas'), pay.qrString, { width: 200, margin: 1 })
+          startPoll(pay.id)
+        } catch (e) {
+          alert(e.message)
+        } finally {
+          btn.disabled = false
+        }
+      }
+
+      function startPoll(paymentId) {
+        if (pollTimer) clearInterval(pollTimer)
+        const statusEl = document.getElementById('payStatus')
+        statusEl.className = 'status wait'
+        statusEl.textContent = 'Menunggu pembayaran…'
+        pollTimer = setInterval(async () => {
+          try {
+            const data = await api('/api/subscription/payments/' + paymentId)
+            const st = (data.payment && data.payment.status) || ''
+            const provider = data.providerStatus || ''
+            if (st === 'PAID' || /sukses|success/i.test(provider)) {
+              statusEl.className = 'status ok'
+              statusEl.textContent = 'Pembayaran sukses. Langganan aktif — mengarahkan ke app…'
+              clearInterval(pollTimer)
+              setTimeout(() => { location.href = '/' }, 1200)
+            } else {
+              statusEl.textContent = 'Status: ' + (provider || st || 'PENDING')
+            }
+          } catch (e) {
+            statusEl.className = 'status bad'
+            statusEl.textContent = e.message
+          }
+        }, 4000)
+      }
+
+      document.getElementById('loginBtn').addEventListener('click', async () => {
+        const email = document.getElementById('email').value.trim()
+        const password = document.getElementById('password').value
+        document.getElementById('authMsg').textContent = ''
+        try {
+          const data = await api('/api/auth/login', {
+            method: 'POST',
+            body: JSON.stringify({ email, password, rememberMe: true }),
+          })
+          token = data.token
+          localStorage.setItem(tokenKey, token)
+          const me = await refreshMe()
+          if (me) renderPlans(me.plans || [])
+        } catch (e) {
+          document.getElementById('authMsg').textContent = e.message
+        }
+      })
+
+      ;(async function init() {
+        const me = await refreshMe()
+        if (me) renderPlans(me.plans || [])
+        else {
+          const plans = await fetch('/api/subscription/plans').then((r) => r.json())
+          renderPlans(plans.plans || [])
+        }
+      })()
+    </script>
+  </body>
+</html>
