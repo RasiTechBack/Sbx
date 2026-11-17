@@ -10,6 +10,9 @@ const storePath = path.join(__dirname, '..', 'data', 'telegram-monitor-activity.
 
 const MAX_LOGS = 400
 const MAX_SERIES = 240
+/** Live API returns a trimmed window so first paint stays light. */
+const LIVE_LOGS = 80
+const LIVE_SERIES = 90
 const SERIES_MIN_GAP_MS = 2500
 
 export type MonitorLogLevel = 'info' | 'success' | 'warn' | 'error'
@@ -256,7 +259,7 @@ export function getMonitorLiveSnapshot() {
     generatedAt: new Date().toISOString(),
     summary,
     monitors,
-    series: store.series.slice(-MAX_SERIES),
-    logs: store.logs.slice(-MAX_LOGS).reverse(),
+    series: store.series.slice(-LIVE_SERIES),
+    logs: store.logs.slice(-LIVE_LOGS).reverse(),
   }
 }

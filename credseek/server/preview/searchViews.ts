@@ -3,9 +3,10 @@ import type { SearchFilter } from '../db/recordsDb.js'
 import { extractDomainFromUrl, normalizePreviewUrl } from './store.js'
 import { capturePreview, getCachedPreview, previewPublicPath } from './capture.js'
 
-const SAMPLE_ROWS = 400
-const MAX_DOMAINS = 80
-const MAX_PICTURES = 48
+/** Keep aggregates snappy — 400-row scans were a top search-tab bottleneck. */
+const SAMPLE_ROWS = 120
+const MAX_DOMAINS = 60
+const MAX_PICTURES = 36
 const CAPTURE_CONCURRENCY = 3
 
 export type DomainAgg = {

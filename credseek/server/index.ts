@@ -91,6 +91,11 @@ import {
   aggregatePicturesFromSearch,
   listRecordsForUrl,
 } from './preview/searchViews.js'
+import { createTtlCache } from './util/ttlCache.js'
+
+/** Hot search responses (credentials / domains / pictures) — cuts repeat UI tab cost. */
+const searchResultCache = createTtlCache<unknown>({ maxEntries: 250, defaultTtlMs: 45_000 })
+const searchAggCache = createTtlCache<unknown>({ maxEntries: 180, defaultTtlMs: 60_000 })
 import {
   importFromRemoteUrl,
   readTelegramConfig,
@@ -808,7 +813,8 @@ app.get(
   ) as SearchFilter
   const page = Math.max(1, Number(req.query.page) || 1)
   const isGuest = !req.user
-  const limit = Math.min(isGuest ? 10 : 100, Math.max(1, Number(req.query.limit) || (isGuest ? 10 : 100)))
+  // Default 25 (was 100) — UI pagination still allows up to 100 when asked.
+  const limit = Math.min(isGuest ? 10 : 100, Math.max(1, Number(req.query.limit) || (isGuest ? 10 : 25)))
 
   if (!q) {
     return res.json({
@@ -836,6 +842,11 @@ app.get(
   const maxPage = Math.max(1, Math.floor(MAX_SEARCH_OFFSET / limit) + 1)
   let safePage = Math.min(page, maxPage)
   const offset = (safePage - 1) * limit
+  const cacheKey = `s:${isGuest ? 'g' : 'u'}:${filter}:${limit}:${safePage}:${q}`
+  const cached = searchResultCache.get(cacheKey) as Record<string, unknown> | undefined
+  if (cached) {
+    return res.json({ ...cached, tookMs: Date.now() - started, cached: true })
+  }
   const searched = await searchRecordsUnified({
     q,
     filter,
@@ -915,7 +926,7 @@ app.get(
 
   const results = isGuest ? pageItems.map(maskRecord) : pageItems
 
-  res.json({
+  const payload = {
     results,
     total,
     matchedTotal,
@@ -931,7 +942,9 @@ app.get(
     exportEnabled: !isGuest,
     maxOffset: MAX_SEARCH_OFFSET,
     enrichment: searchBackend() === 'sqlite' ? enrichmentStatusSnapshot() : undefined,
-  })
+  }
+  searchResultCache.set(`s:${isGuest ? 'g' : 'u'}:${filter}:${limit}:${safePage}:${q}`, payload)
+  res.json(payload)
 })
 
 app.get(
@@ -951,7 +964,11 @@ app.get(
     const validated = validateSearchQuery(q)
     if (!validated.ok) return res.status(400).json({ error: validated.error })
     try {
+      const key = `d:${filter}:${q}`
+      const hit = searchAggCache.get(key)
+      if (hit) return res.json(hit)
       const out = await aggregateDomainsFromSearch(q, filter)
+      searchAggCache.set(key, out)
       res.json(out)
     } catch (err) {
       res.status(500).json({ error: err instanceof Error ? err.message : 'Gagal agregasi domain' })
@@ -976,7 +993,11 @@ app.get(
     const validated = validateSearchQuery(q)
     if (!validated.ok) return res.status(400).json({ error: validated.error })
     try {
+      const key = `p:${filter}:${q}`
+      const hit = searchAggCache.get(key)
+      if (hit) return res.json(hit)
       const out = await aggregatePicturesFromSearch(q, filter, { capture: false })
+      searchAggCache.set(key, out)
       res.json(out)
     } catch (err) {
       res.status(500).json({ error: err instanceof Error ? err.message : 'Gagal agregasi picture' })

@@ -183,8 +183,11 @@ function resolveFtsColumns(filter: SearchFilter, tokens: string[]): FtsColumn[] 
     if (isEmailLike(t)) return ['username', 'url']
     if (isIpv4Like(t)) return ['url', 'domain']
     if (isDomainLike(t)) return ['domain', 'url']
+    // Bare keywords (shineserver, mahasiswa, …): skip password column —
+    // full-column MATCH on passwords is a common multi-second cold path.
+    if (/^[a-z0-9][a-z0-9_-]*$/i.test(t)) return ['username', 'url', 'domain']
   }
-  return 'all'
+  return ['url', 'username', 'domain']
 }
 
 function mapProbe(rows: Record<string, unknown>[], limit: number) {
@@ -218,7 +221,7 @@ function ensureSchema(database: DatabaseSync) {
     PRAGMA temp_store = MEMORY;
     PRAGMA mmap_size = 268435456;
     PRAGMA cache_size = -196000;
-    PRAGMA busy_timeout = 60000;
+    PRAGMA busy_timeout = 8000;
     PRAGMA wal_autocheckpoint = 1000;
 
     CREATE TABLE IF NOT EXISTS records (
@@ -1146,14 +1149,18 @@ export function searchRecords(opts: {
 
     const columns = resolveFtsColumns(opts.filter, tokens)
     try {
+      const ftsStarted = Date.now()
       const fts = searchByFts(tokens, columns, limit, offset)
-      // Soft-merge title/description keyword hits when credential FTS is thin
+      const ftsMs = Date.now() - ftsStarted
+      // Soft-merge title/description hits only when FTS is thin AND still cheap.
+      // Enrichment + IN(domain) was a common cold-path add-on for rare keywords.
       if (
         offset === 0 &&
-        (opts.filter === 'all' || opts.filter === 'domain' || opts.filter === 'url') &&
-        fts.rows.length < limit
+        ftsMs < 1200 &&
+        fts.rows.length < Math.min(8, limit) &&
+        (opts.filter === 'all' || opts.filter === 'domain' || opts.filter === 'url')
       ) {
-        const enrichDomains = domainsMatchingEnrichment(tokens, 60)
+        const enrichDomains = domainsMatchingEnrichment(tokens, 20)
         if (enrichDomains.length) {
           const extra = searchRecordsByDomains(enrichDomains, limit, 0)
           if (extra.rows.length) {
