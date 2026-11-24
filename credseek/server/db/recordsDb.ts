@@ -172,6 +172,10 @@ function normalizeSearchText(raw: string): string {
   return s
 }
 
+function isBareKeyword(token: string) {
+  return /^[a-z0-9][a-z0-9_-]*$/i.test(token)
+}
+
 function resolveFtsColumns(filter: SearchFilter, tokens: string[]): FtsColumn[] | 'all' {
   if (filter === 'url') return ['url']
   if (filter === 'username') return ['username']
@@ -183,9 +187,8 @@ function resolveFtsColumns(filter: SearchFilter, tokens: string[]): FtsColumn[] 
     if (isEmailLike(t)) return ['username', 'url']
     if (isIpv4Like(t)) return ['url', 'domain']
     if (isDomainLike(t)) return ['domain', 'url']
-    // Bare keywords (shineserver, mahasiswa, …): skip password column —
-    // full-column MATCH on passwords is a common multi-second cold path.
-    if (/^[a-z0-9][a-z0-9_-]*$/i.test(t)) return ['username', 'url', 'domain']
+    // Bare keywords: domain+url only (skip username/password — cheaper + better intent).
+    if (isBareKeyword(t)) return ['domain', 'url']
   }
   return ['url', 'username', 'domain']
 }
@@ -288,6 +291,7 @@ function ensureSchema(database: DatabaseSync) {
     );
     CREATE INDEX IF NOT EXISTS idx_dns_ipv4 ON domain_dns(ipv4);
     CREATE INDEX IF NOT EXISTS idx_dns_resolved ON domain_dns(resolved_at);
+    CREATE INDEX IF NOT EXISTS idx_dns_status ON domain_dns(status);
 
     CREATE VIRTUAL TABLE IF NOT EXISTS url_enrichment_fts USING fts5(
       url_key UNINDEXED,
@@ -1149,18 +1153,32 @@ export function searchRecords(opts: {
 
     const columns = resolveFtsColumns(opts.filter, tokens)
     try {
+      const bare =
+        opts.filter === 'all' && tokens.length === 1 && isBareKeyword(token0)
+
+      // Bare keywords (shineserver, gofood, …): one domain+url MATCH.
+      // Skip username + password columns and avoid a second FTS round-trip.
+      let fts
+      if (bare) {
+        fts = searchByFts(tokens, ['domain', 'url'], limit, offset)
+        return {
+          total: offset + fts.rows.length + fts.totalExtra,
+          rows: fts.rows,
+          hasMore: fts.hasMore,
+        }
+      }
+
       const ftsStarted = Date.now()
-      const fts = searchByFts(tokens, columns, limit, offset)
+      fts = searchByFts(tokens, columns, limit, offset)
       const ftsMs = Date.now() - ftsStarted
-      // Soft-merge title/description hits only when FTS is thin AND still cheap.
-      // Enrichment + IN(domain) was a common cold-path add-on for rare keywords.
+      // Soft-merge enrichment only when the primary hit set is thin and cheap.
       if (
         offset === 0 &&
-        ftsMs < 1200 &&
+        ftsMs < 800 &&
         fts.rows.length < Math.min(8, limit) &&
         (opts.filter === 'all' || opts.filter === 'domain' || opts.filter === 'url')
       ) {
-        const enrichDomains = domainsMatchingEnrichment(tokens, 20)
+        const enrichDomains = domainsMatchingEnrichment(tokens, 15)
         if (enrichDomains.length) {
           const extra = searchRecordsByDomains(enrichDomains, limit, 0)
           if (extra.rows.length) {
@@ -1733,17 +1751,48 @@ function pct(done: number, total: number) {
   return Math.min(100, Math.round((done / total) * 1000) / 10)
 }
 
+const ENRICH_PROGRESS_TTL_MS = 15_000
+let enrichProgressCache: { at: number; previewDone: number; value: EnrichmentProgress } | null =
+  null
+
 export function getEnrichmentProgress(previewDone = 0): EnrichmentProgress {
+  const now = Date.now()
+  if (
+    enrichProgressCache &&
+    now - enrichProgressCache.at < ENRICH_PROGRESS_TTL_MS &&
+    enrichProgressCache.previewDone === previewDone
+  ) {
+    return enrichProgressCache.value
+  }
+
   const totalHosts = getUniqueHostsFast()
+  // Prefer equality on indexed status over `!= 'pending'` (avoids almost-full scans).
   const dnsDone = Number(
-    db.prepare(`SELECT COUNT(*) AS c FROM domain_dns WHERE status != 'pending'`).get()?.c ?? 0,
+    (
+      db
+        .prepare(
+          `SELECT
+             (SELECT COUNT(*) FROM domain_dns WHERE status = 'ok') +
+             (SELECT COUNT(*) FROM domain_dns WHERE status = 'error') AS c`,
+        )
+        .get() as { c?: number } | undefined
+    )?.c ?? 0,
   )
   const urlDone = Number(
-    db.prepare(`SELECT COUNT(*) AS c FROM url_enrichment WHERE status != 'pending'`).get()?.c ?? 0,
+    (
+      db
+        .prepare(
+          `SELECT
+             (SELECT COUNT(*) FROM url_enrichment WHERE status = 'ok') +
+             (SELECT COUNT(*) FROM url_enrichment WHERE status = 'error') +
+             (SELECT COUNT(*) FROM url_enrichment WHERE status = 'dead') AS c`,
+        )
+        .get() as { c?: number } | undefined
+    )?.c ?? 0,
   )
   // Homepage-per-domain is the primary enrichment target (efficient).
   const urlTotal = Math.max(totalHosts, urlDone)
-  return {
+  const value: EnrichmentProgress = {
     dns: { done: dnsDone, total: totalHosts, pct: pct(dnsDone, totalHosts) },
     urlText: { done: urlDone, total: urlTotal, pct: pct(urlDone, urlTotal) },
     previews: {
@@ -1752,8 +1801,10 @@ export function getEnrichmentProgress(previewDone = 0): EnrichmentProgress {
       pct: pct(previewDone, Math.max(totalHosts, previewDone)),
     },
     updatedAt: new Date().toISOString(),
-    recentLog: listRecentEnrichmentLog(24),
+    recentLog: listRecentEnrichmentLog(16),
   }
+  enrichProgressCache = { at: now, previewDone, value }
+  return value
 }
 
 export function enrichmentExists(urlKey: string) {
