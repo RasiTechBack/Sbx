@@ -94,8 +94,9 @@ import {
 import { createTtlCache } from './util/ttlCache.js'
 
 /** Hot search responses (credentials / domains / pictures) — cuts repeat UI tab cost. */
-const searchResultCache = createTtlCache<unknown>({ maxEntries: 250, defaultTtlMs: 45_000 })
-const searchAggCache = createTtlCache<unknown>({ maxEntries: 180, defaultTtlMs: 60_000 })
+const searchResultCache = createTtlCache<unknown>({ maxEntries: 280, defaultTtlMs: 60_000 })
+const searchAggCache = createTtlCache<unknown>({ maxEntries: 200, defaultTtlMs: 90_000 })
+const enrichmentStatusCache = createTtlCache<unknown>({ maxEntries: 8, defaultTtlMs: 15_000 })
 import {
   importFromRemoteUrl,
   readTelegramConfig,
@@ -1301,7 +1302,11 @@ app.get('/api/enrichment/status', authMiddleware, (_req: AuthRequest, res) => {
       backend: searchBackend(),
     })
   }
-  res.json({ ...enrichmentStatusSnapshot(), backend: 'sqlite' })
+  const cached = enrichmentStatusCache.get('sqlite')
+  if (cached) return res.json(cached)
+  const payload = { ...enrichmentStatusSnapshot(), backend: 'sqlite' as const }
+  enrichmentStatusCache.set('sqlite', payload)
+  res.json(payload)
 })
 
 app.get('/api/import/formats', authMiddleware, requireDataManager, (_req, res) => {

@@ -4,9 +4,9 @@ import { extractDomainFromUrl, normalizePreviewUrl } from './store.js'
 import { capturePreview, getCachedPreview, previewPublicPath } from './capture.js'
 
 /** Keep aggregates snappy — 400-row scans were a top search-tab bottleneck. */
-const SAMPLE_ROWS = 120
-const MAX_DOMAINS = 60
-const MAX_PICTURES = 36
+const SAMPLE_ROWS = 80
+const MAX_DOMAINS = 50
+const MAX_PICTURES = 30
 const CAPTURE_CONCURRENCY = 3
 
 export type DomainAgg = {
